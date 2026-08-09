@@ -1,12 +1,12 @@
-from fastapi import FastAPI, File, Form, UploadFile, HTTPException
-
-from backend.ml.pdf_parser import extract_text_from_pdf
-from backend.ml.analyzer import calculate_similarity
-from backend.ml.skills import compare_skills, calculate_skill_match
-from backend.ml.scoring import (
-    calculate_keyword_coverage,
-    calculate_final_score,
+from fastapi import (
+    FastAPI,
+    File,
+    Form,
+    UploadFile,
+    HTTPException,
 )
+
+from backend.services.resume_analyzer import analyze_resume
 
 
 app = FastAPI(
@@ -24,7 +24,7 @@ def health_check():
 
 
 @app.post("/analyze")
-async def analyze_resume(
+async def analyze_resume_endpoint(
     resume: UploadFile = File(...),
     job_description: str = Form(...),
 ):
@@ -32,76 +32,36 @@ async def analyze_resume(
     Analyze a resume against a job description.
     """
 
+    if not resume.filename:
+        raise HTTPException(
+            status_code=400,
+            detail="Resume file is required."
+        )
+
     if not resume.filename.lower().endswith(".pdf"):
         raise HTTPException(
             status_code=400,
             detail="Only PDF resumes are supported."
         )
 
-    # Read uploaded PDF
-    pdf_bytes = await resume.read()
-
-    # Save temporarily
-    temp_path = "backend/temp_resume.pdf"
-
-    with open(temp_path, "wb") as file:
-        file.write(pdf_bytes)
+    if not job_description.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Job description is required."
+        )
 
     try:
-        # Extract resume text
-        resume_text = extract_text_from_pdf(temp_path)
+        pdf_bytes = await resume.read()
 
-        if not resume_text:
-            raise HTTPException(
-                status_code=400,
-                detail="Could not extract text from the PDF."
-            )
-
-        # Calculate TF-IDF similarity
-        similarity_score = calculate_similarity(
-            resume_text,
+        result = analyze_resume(
+            pdf_bytes,
             job_description
         )
 
-        # Extract and compare skills
-        skill_result = compare_skills(
-            resume_text,
-            job_description
+        return result
+
+    except ValueError as error:
+        raise HTTPException(
+            status_code=400,
+            detail=str(error)
         )
-
-        # Calculate skill match
-        skill_score = calculate_skill_match(
-            resume_text,
-            job_description
-        )
-
-        # Calculate keyword coverage
-        keyword_score = calculate_keyword_coverage(
-            resume_text,
-            job_description
-        )
-
-        # Calculate final score
-        final_score = calculate_final_score(
-            similarity_score,
-            skill_score,
-            keyword_score
-        )
-
-        return {
-            "match_score": final_score,
-            "similarity_score": similarity_score,
-            "skill_match": skill_score,
-            "keyword_coverage": keyword_score,
-            "resume_skills": skill_result["resume_skills"],
-            "job_skills": skill_result["job_skills"],
-            "matched_skills": skill_result["matched_skills"],
-            "missing_skills": skill_result["missing_skills"],
-        }
-
-    finally:
-        # Remove temporary file
-        import os
-
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
