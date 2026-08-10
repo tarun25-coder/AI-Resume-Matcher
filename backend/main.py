@@ -89,6 +89,7 @@ async def analyze_resume_endpoint(
             status_code=400,
             detail=str(error)
         )
+
     except Exception as error:
         print(f"Analysis error: {error}")
 
