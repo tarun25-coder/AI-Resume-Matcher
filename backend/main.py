@@ -1,5 +1,3 @@
-from copy import error
-
 from fastapi import (
     FastAPI,
     File,
@@ -9,7 +7,7 @@ from fastapi import (
 )
 
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.cors import CORSMiddleware
+
 from backend.services.resume_analyzer import analyze_resume
 
 
@@ -18,11 +16,14 @@ app = FastAPI(
     description="API for analyzing resumes against job descriptions.",
     version="1.0.0",
 )
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
+        "https://ai-resume-matcher-laixipxa0-tarun25-coders-projects.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
