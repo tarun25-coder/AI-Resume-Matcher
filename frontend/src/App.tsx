@@ -21,24 +21,39 @@ function App() {
 
   // Handle resume PDF selection
   const handleFileChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
+  event: React.ChangeEvent<HTMLInputElement>
+) => {
+  const file = event.target.files?.[0];
 
-    if (!file) {
-      return;
-    }
+  if (!file) {
+    return;
+  }
 
-    if (file.type !== "application/pdf") {
-      setError("Please upload a PDF file.");
-      setResume(null);
-      return;
-    }
-
-    setResume(file);
-    setError("");
+  // Check file type
+  if (file.type !== "application/pdf") {
+    setError("Please upload a PDF file.");
+    setResume(null);
     setResult(null);
-  };
+    return;
+  }
+
+  // Check file size - maximum 5 MB
+  const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
+  if (file.size > MAX_FILE_SIZE) {
+    setError(
+      "Resume file is too large. Maximum size is 5 MB."
+    );
+    setResume(null);
+    setResult(null);
+    return;
+  }
+
+  // File is valid
+  setResume(file);
+  setError("");
+  setResult(null);
+};
 
   // Send resume and job description to FastAPI
   const analyzeResume = async () => {
@@ -61,25 +76,25 @@ function App() {
     formData.append("resume", resume);
     formData.append("job_description", jobDescription);
 
-    try {
-      const response = await fetch(
-        "http://127.0.0.1:8000/analyze",
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
+try {
+  const response = await fetch(
+    `${import.meta.env.VITE_API_URL}/analyze`,
+    {
+      method: "POST",
+      body: formData,
+    }
+  );
 
-      const data = await response.json();
+  const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(
-          data.detail || "Failed to analyze resume."
-        );
-      }
+  if (!response.ok) {
+    throw new Error(
+      data.detail || "Failed to analyze resume."
+    );
+  }
 
-      setResult(data);
-    } catch (err) {
+  setResult(data);
+} catch (err) {
       setError(
         err instanceof Error
           ? err.message

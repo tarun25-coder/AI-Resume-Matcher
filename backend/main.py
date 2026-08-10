@@ -60,6 +60,15 @@ async def analyze_resume_endpoint(
     try:
         pdf_bytes = await resume.read()
 
+        # Limit resume size to 5 MB
+        MAX_FILE_SIZE = 5 * 1024 * 1024
+
+        if len(pdf_bytes) > MAX_FILE_SIZE:
+            raise HTTPException(
+                status_code=400,
+                detail="Resume file is too large. Maximum size is 5 MB."
+            )
+
         result = analyze_resume(
             pdf_bytes,
             job_description
