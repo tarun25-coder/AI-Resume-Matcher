@@ -5,7 +5,7 @@ from fastapi import (
     UploadFile,
     HTTPException,
 )
-
+from fastapi.middleware.cors import CORSMiddleware
 from backend.services.resume_analyzer import analyze_resume
 
 
@@ -13,6 +13,13 @@ app = FastAPI(
     title="AI Resume Matcher API",
     description="API for analyzing resumes against job descriptions.",
     version="1.0.0",
+)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
