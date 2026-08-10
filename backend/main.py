@@ -1,3 +1,5 @@
+from copy import error
+
 from fastapi import (
     FastAPI,
     File,
@@ -80,4 +82,11 @@ async def analyze_resume_endpoint(
         raise HTTPException(
             status_code=400,
             detail=str(error)
+        )
+    except Exception as error:
+        print(f"Analysis error: {error}")
+
+        raise HTTPException(
+            status_code=500,
+            detail="An unexpected error occurred while analyzing the resume."
         )
